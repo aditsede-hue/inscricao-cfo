@@ -537,7 +537,7 @@ async function sendWhatsApp(fone, nome){
     
     const primeiroNome = nome.trim().split(' ')[0].charAt(0).toUpperCase() + nome.trim().split(' ')[0].slice(1).toLowerCase();
     
-    const msg = `Olá, ${primeiroNome.charAt(0).toUpperCase()+primeiroNome.slice(1).toLowerCase()}! 🙏
+    const msg = `Olá, ${primeiroNome}! 🙏
 
 ✅ *Inscrição Confirmada!*
 Sua inscrição no *CFO — Curso de Formação de Obreiros* da ADIT foi recebida!
@@ -563,11 +563,7 @@ _Secretaria ADIT_`;
       },
       body: JSON.stringify({
         number: num,
-        text: msg,
-        options: {
-          delay: 1200,
-          presence: "composing"
-        }
+        text: msg
       })
     });
     console.log('WhatsApp enviado para', num);
