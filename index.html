@@ -378,11 +378,8 @@ async function submitForm(){
   const entry={nome:nome.toUpperCase(),cpf,nasc,fone,email,igreja,cargo,indicado,objetivos:objs.join(', '),data:new Date().toLocaleDateString('pt-BR'),hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),ts:Date.now()};
   try{await fetch(DB_URL+'/'+DB_KEY+'.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});}catch(e){}
   
-  // Enviar WhatsApp
-  await sendWhatsApp(fone, nome);
-  
-  // Enviar E-mail
-  await sendEmail(email, nome);
+  // Enviar via n8n
+  await sendNotificacoes(entry);
   
   switchView('success');
 }
@@ -449,6 +446,30 @@ function exportExcel(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 
+
+// ===== NOTIFICAÇÕES VIA N8N =====
+async function sendNotificacoes(entry){
+  try{
+    await fetch('https://n8n-production-da08.up.railway.app/webhook-test/63c2f855-7d08-4e55-8331-3b1f3c7562cb', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        nome: entry.nome,
+        fone: entry.fone,
+        email: entry.email||'',
+        igreja: entry.igreja,
+        cargo: entry.cargo,
+        objetivos: entry.objetivos,
+        data: entry.data,
+        hora: entry.hora
+      })
+    });
+    console.log('Notificação enviada ao n8n');
+  }catch(e){
+    console.log('Erro n8n:', e);
+  }
+}
+// =================================
 
 // ===== NOTIFICAÇÃO EMAIL =====
 async function sendEmail(emailDest, nome){
