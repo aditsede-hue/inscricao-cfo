@@ -382,6 +382,9 @@ async function submitForm(){
   // Enviar WhatsApp
   await sendWhatsApp(fone, nome);
   
+  // Enviar E-mail
+  await sendEmail(email, nome);
+  
   switchView('success');
 }
 
@@ -444,6 +447,84 @@ function exportExcel(){
 }
 
 
+// ===== NOTIFICAÇÃO EMAIL =====
+async function sendEmail(emailDest, nome){
+  if(!emailDest) return; // campo opcional
+  try{
+    const primeiroNome = nome.charAt(0).toUpperCase() + nome.slice(1).toLowerCase().split(' ')[0];
+    
+    const emailBody = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+    <div style="background:#007aff;padding:28px 32px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Assembleia de Deus Ministério de Madureira</div>
+      <div style="font-size:22px;font-weight:800;color:#fff">Curso de Formação de Obreiros</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.8);margin-top:4px;font-weight:600;letter-spacing:1px">CFO — ADIT</div>
+    </div>
+    <div style="padding:32px">
+      <div style="font-size:18px;font-weight:700;color:#1d1d1f;margin-bottom:6px">Olá, \${primeiroNome}! 🙏</div>
+      <div style="font-size:15px;color:#34c759;font-weight:700;margin-bottom:20px">✅ Inscrição Confirmada!</div>
+      <div style="font-size:14px;color:#3d3d3d;line-height:1.7;margin-bottom:24px">
+        Sua inscrição no <strong>CFO — Curso de Formação de Obreiros</strong> da ADIT foi recebida com sucesso!
+      </div>
+      <div style="background:#f5f5f7;border-radius:12px;padding:20px;margin-bottom:24px">
+        <div style="font-size:11px;font-weight:700;color:#6e6e73;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">Detalhes do Curso</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:18px">📅</span>
+          <div><div style="font-size:11px;color:#6e6e73;font-weight:600">Início</div><div style="font-size:14px;font-weight:700;color:#1d1d1f">07 de Junho de 2025</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:18px">⏰</span>
+          <div><div style="font-size:11px;color:#6e6e73;font-weight:600">Horário</div><div style="font-size:14px;font-weight:700;color:#1d1d1f">08h30</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:18px">📍</span>
+          <div><div style="font-size:11px;color:#6e6e73;font-weight:600">Local</div><div style="font-size:14px;font-weight:700;color:#1d1d1f">ADIT Sede</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">🗓️</span>
+          <div><div style="font-size:11px;color:#6e6e73;font-weight:600">Periodicidade</div><div style="font-size:14px;font-weight:700;color:#1d1d1f">Aos Domingos</div></div>
+        </div>
+      </div>
+      <div style="background:#f0f5ff;border-left:4px solid #007aff;border-radius:8px;padding:16px;margin-bottom:24px">
+        <div style="font-size:13px;font-weight:700;color:#007aff;margin-bottom:8px">📦 O que levar no primeiro dia:</div>
+        <div style="font-size:14px;color:#1d1d1f;line-height:1.8">• Bíblia<br>• Caderno<br>• Caneta</div>
+      </div>
+      <div style="background:#fff3f3;border-left:4px solid #ff3b30;border-radius:8px;padding:14px;margin-bottom:24px">
+        <div style="font-size:13px;font-weight:700;color:#ff3b30">⚠️ Não falte! O curso começa pontualmente às 08h30.</div>
+      </div>
+      <div style="font-size:13px;color:#6e6e73;line-height:1.6">O curso é <strong>totalmente gratuito!</strong> Apenas a apostila tem custo de <strong>R$ 30,00</strong> referente ao material. Que Deus abençoe sua jornada de aprendizado! 🙌</div>
+    </div>
+    <div style="background:#f5f5f7;padding:20px 32px;text-align:center;border-top:1px solid #e5e5e5">
+      <div style="font-size:12px;color:#6e6e73">Secretaria ADIT — Assembleia de Deus do Itapoã</div>
+      <div style="font-size:12px;color:#6e6e73;margin-top:2px">Ministério de Madureira</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 're_d6AXGnyK_5GHz8nNsHQFJfEzavVVaCvVa'
+      },
+      body: JSON.stringify({
+        from: 'Secretaria ADIT <secretaria@igrejaadit.com>',
+        to: emailDest,
+        subject: '✅ Inscrição Confirmada — CFO ADIT 2025',
+        html: emailBody
+      })
+    });
+    console.log('E-mail enviado para', emailDest);
+  }catch(e){
+    console.log('Erro e-mail:', e);
+  }
+}
+// ==============================
+
 // ===== NOTIFICAÇÃO WHATSAPP =====
 async function sendWhatsApp(fone, nome){
   try{
@@ -464,7 +545,8 @@ Sua inscrição no *CFO — Curso de Formação de Obreiros* da ADIT foi recebid
 ⏰ Horário: *08h30*
 📍 Local: *ADIT Sede*
 
-Curso Gratuito
+✅ O curso é *totalmente gratuito!*
+📖 Apostila: *R$ 30,00* (custo do material)
 
 📦 *O que levar:* Bíblia, Caderno e Caneta
 
