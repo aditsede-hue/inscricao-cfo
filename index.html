@@ -266,15 +266,14 @@ tr:hover td{background:#f8f8fa}
       <div class="rep-stat-grid" id="rep-stats"></div>
       <div class="action-row">
         <button class="action-btn blue" onclick="exportExcel()">⬇ Excel</button>
-        <button class="action-btn" onclick="window.print()">Imprimir</button>
+        <button class="action-btn blue" onclick="exportPDF()">⬇ PDF</button>
         <button class="action-btn" onclick="backToForm()">Voltar</button>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>#</th><th>Nome</th><th>CPF</th><th>Nasc.</th><th>Fone</th><th>E-mail</th>
-              <th>Igreja</th><th>Cargo</th><th>Indicado por</th><th>Objetivo</th><th>Data</th>
+              <th>#</th><th>Nome</th><th>Igreja</th><th>Cargo</th><th>Fone</th><th>E-mail</th><th>CPF</th><th>Nasc.</th><th>Indicado por</th><th>Objetivo</th><th>Data</th>
             </tr>
           </thead>
           <tbody id="reg-list"></tbody>
@@ -433,10 +432,14 @@ async function loadReport(){
   switchView('report');
 }
 
+function exportPDF(){
+  window.print();
+}
+
 function exportExcel(){
   const sorted=registrations.sort((a,b)=>a.nome.localeCompare(b.nome));
-  const headers=['#','Nome','CPF','Nascimento','Telefone','E-mail','Igreja','Cargo','Indicado por','Objetivo','Data Inscrição'];
-  const rows=sorted.map((r,i)=>[i+1,r.nome||'',r.cpf||'',r.nasc||'',r.fone||'',r.email||'',r.igreja||'',r.cargo||'',r.indicado||'',r.objetivos||'',(r.data||'')+' '+(r.hora||'')]);
+  const headers=['#','Nome','Igreja','Cargo','Telefone','E-mail','CPF','Nascimento','Indicado por','Objetivo','Data Inscrição'];
+  const rows=sorted.map((r,i)=>[i+1,r.nome||'',r.igreja||'',r.cargo||'',r.fone||'',r.email||'',r.cpf||'',r.nasc||'',r.indicado||'',r.objetivos||'',(r.data||'')+' '+(r.hora||'')]);
   const BOM='\uFEFF';
   const csv=BOM+[headers,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
@@ -530,11 +533,9 @@ async function sendWhatsApp(fone, nome){
   try{
     // Formata número: remove não-dígitos e adiciona DDI 55
     let num = fone.replace(/\D/g,'');
-    if(num.length === 11) num = '55' + num;
-    else if(num.length === 10) num = '55' + num;
+    if(!num.startsWith('55')) num = '55' + num;
     
-    const primeiroNome = nome.trim().split(' ')[0];
-    primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase();
+    const primeiroNome = nome.trim().split(' ')[0].charAt(0).toUpperCase() + nome.trim().split(' ')[0].slice(1).toLowerCase();
     
     const msg = `Olá, ${primeiroNome.charAt(0).toUpperCase()+primeiroNome.slice(1).toLowerCase()}! 🙏
 
@@ -562,7 +563,11 @@ _Secretaria ADIT_`;
       },
       body: JSON.stringify({
         number: num,
-        text: msg
+        text: msg,
+        options: {
+          delay: 1200,
+          presence: "composing"
+        }
       })
     });
     console.log('WhatsApp enviado para', num);
