@@ -267,13 +267,14 @@ tr:hover td{background:#f8f8fa}
       <div class="action-row">
         <button class="action-btn blue" onclick="exportExcel()">⬇ Excel</button>
         <button class="action-btn blue" onclick="exportPDF()">⬇ PDF</button>
+        <button class="action-btn" onclick="alterarSenha()">🔑 Senha</button>
         <button class="action-btn" onclick="backToForm()">Voltar</button>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>#</th><th>Nome</th><th>Igreja</th><th>Cargo</th><th>Fone</th><th>E-mail</th><th>CPF</th><th>Nasc.</th><th>Indicado por</th><th>Objetivo</th><th>Data</th>
+              <th>#</th><th>Nome</th><th>Igreja</th><th>Cargo</th><th>Fone</th><th>E-mail</th><th>CPF</th><th>Nasc.</th><th>Indicado por</th><th>Objetivo</th><th>Data</th><th>Ação</th>
             </tr>
           </thead>
           <tbody id="reg-list"></tbody>
@@ -314,9 +315,18 @@ tr:hover td{background:#f8f8fa}
 <script>
 const DB_URL="https://adit-checkin-default-rtdb.firebaseio.com";
 const DB_KEY="inscricoes_formacao";
-const ADMIN_PIN="1234";
+let ADMIN_PIN="1234";
 let selectedObjs=[];
 let registrations=[];
+
+// Carrega senha do Firebase ao iniciar
+(async function carregarSenha(){
+  try{
+    const r=await fetch(DB_URL+'/config/admin_pin.json');
+    const d=await r.json();
+    if(d) ADMIN_PIN=d;
+  }catch(e){}
+})();
 
 function switchView(v){
   ['home','form','success','lock','report'].forEach(id=>{
@@ -402,15 +412,24 @@ function checkPin(el){
   }
 }
 
+let registrationKeys={};
+
 async function loadReport(){
-  try{const r=await fetch(DB_URL+'/'+DB_KEY+'.json');const d=await r.json();registrations=d?Object.values(d):[];}catch(e){registrations=[];}
+  try{
+    const r=await fetch(DB_URL+'/'+DB_KEY+'.json');
+    const d=await r.json();
+    registrationKeys={};
+    if(d){
+      registrations=Object.entries(d).map(([k,v])=>{registrationKeys[v.ts]=k;return v;});
+    } else {registrations=[];}
+  }catch(e){registrations=[];}
   const byChurch={};
   registrations.forEach(r=>{if(!byChurch[r.igreja])byChurch[r.igreja]=0;byChurch[r.igreja]++;});
   document.getElementById('rep-stats').innerHTML=`
     <div class="rep-stat-card"><div class="rep-num">${registrations.length}</div><div class="rep-lbl">Total de Inscritos</div></div>
     <div class="rep-stat-card"><div class="rep-num">${Object.keys(byChurch).length}</div><div class="rep-lbl">Igrejas</div></div>`;
   const list=document.getElementById('reg-list');
-  if(!registrations.length){list.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:#6e6e73">Nenhuma inscrição ainda.</td></tr>';}
+  if(!registrations.length){list.innerHTML='<tr><td colspan="11" style="text-align:center;padding:24px;color:#6e6e73">Nenhuma inscrição ainda.</td></tr>';}
   else{
     const sorted=registrations.sort((a,b)=>a.nome.localeCompare(b.nome));
     list.innerHTML=sorted.map((r,i)=>`<tr>
@@ -424,9 +443,44 @@ async function loadReport(){
       <td style="color:#6e6e73;white-space:nowrap">${r.indicado||'-'}</td>
       <td style="color:#6e6e73">${r.objetivos||'-'}</td>
       <td style="color:#6e6e73;white-space:nowrap">${r.data||'-'}</td>
+      <td style="text-align:center">
+        <button onclick="excluirInscricao(${r.ts})" style="background:none;border:none;cursor:pointer;padding:4px" title="Excluir">
+          <svg width="16" height="16" fill="none" stroke="#ff3b30" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+      </td>
     </tr>`).join('');
   }
   switchView('report');
+}
+
+async function excluirInscricao(ts){
+  if(!confirm('Excluir esta inscrição? Esta ação não pode ser desfeita.')) return;
+  const key=registrationKeys[ts];
+  if(!key){alert('Chave não encontrada.');return;}
+  try{
+    await fetch(DB_URL+'/'+DB_KEY+'/'+key+'.json',{method:'DELETE'});
+    await loadReport();
+  }catch(e){alert('Erro ao excluir. Tente novamente.');}
+}
+
+async function alterarSenha(){
+  const atual=prompt('Digite a senha atual:');
+  if(atual!==ADMIN_PIN){alert('Senha incorreta.');return;}
+  const nova=prompt('Digite a nova senha (mínimo 4 caracteres):');
+  if(!nova||nova.length<4){alert('Senha inválida.');return;}
+  const confirm2=prompt('Confirme a nova senha:');
+  if(nova!==confirm2){alert('As senhas não coincidem.');return;}
+  try{
+    await fetch(DB_URL+'/config/admin_pin.json',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(nova)
+    });
+    ADMIN_PIN=nova;
+    alert('Senha alterada com sucesso!');
+  }catch(e){alert('Erro ao salvar senha. Tente novamente.');}
 }
 
 function exportPDF(){
