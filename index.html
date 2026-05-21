@@ -450,7 +450,7 @@ function exportExcel(){
 // ===== NOTIFICAÇÕES VIA N8N =====
 async function sendNotificacoes(entry){
   try{
-    await fetch('https://n8n-production-da08.up.railway.app/webhook-test/63c2f855-7d08-4e55-8331-3b1f3c7562cb', {
+    await fetch('https://n8n-production-da08.up.railway.app/webhook/cfo', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
